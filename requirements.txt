@@ -1,0 +1,4 @@
+pytorch
+torchvision
+tensorboard-pytorch
+tensorflow-tensorboard
