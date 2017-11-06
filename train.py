@@ -170,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
     parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 
-    parser.add_argument('--tensorboard', default=True, type=str, help='Use tensorboard for loss visualization')
+    parser.add_argument('--tensorboard', default=True, type=str2bool, help='Use tensorboard for loss visualization')
 
     parser.add_argument('--save_folder', default='weights/', help='Location to save checkpoint models')
     parser.add_argument('--coco_root', default=COCOroot, help='Location of OCT root directory')
