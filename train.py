@@ -47,8 +47,6 @@ def train(args):
     val_sets = [('2012', 'val')]
     data_loader_train = make_dataloader_voc(args.voc_root, train_sets, SSDAugmentation(ssd_dim, means),
                                       args.batch_size, args.num_workers, pin_memory=False)
-    data_loader_val = make_dataloader_voc(args.voc_root, val_sets, SSDAugmentation(ssd_dim, means),
-                                      args.batch_size, args.num_workers, pin_memory=False)
     num_classes = 21 
 
     # model
@@ -66,7 +64,6 @@ def train(args):
                           momentum=args.momentum, 
                           weight_decay=args.weight_decay)
     lr_sche = lr_scheduler.MultiStepLR(optimizer, milestones=[80000, 100000], gamma=args.gamma)
-    #lr_sche = lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     # loss
     criterion = MultiBoxLoss(
@@ -103,6 +100,7 @@ def train(args):
             loss = loss_l + loss_c
             loss.backward()
             optimizer.step()
+            lr_sche.step()
 
             # logging
             loc_loss += loss_l.data[0]
@@ -114,34 +112,7 @@ def train(args):
                 writer.add_scalar('train_loss/cls', loss_c.data[0], iteration)
                 writer.add_scalar('train_loss/loc', loss_l.data[0], iteration)
 
-            # val and save model
-            if False: # No enough memory
-                print('validating...')
-                val_loss_l = 0
-                val_loss_c = 0
-                val_sum = 1000
-                for enum, (images2, targets2) in enumerate(data_loader_val):
-                    if args.cuda:
-                        images2 = Variable(images2.cuda())
-                        targets2 = [Variable(anno.cuda(), volatile=True) for anno in targets2]
-                    else:
-                        images2 = Variable(images2)
-                        targets2 = [Variable(anno, volatile=True) for anno in targets2]
-                    out = net(images2)
-                    loss_l, loss_c = criterion(out, targets2)
-                    val_loss_l += loss_l.data[0]
-                    val_loss_c += loss_c.data[0]
-                    if enum > val_sum:
-                        break
-                val_loss_l /= val_sum 
-                val_loss_c /= val_sum 
-                val_loss = val_loss_l + val_loss_c
-                print('val loss: %.4f' % (val_loss))
-                lr_sche.step(val_loss)
-                if args.tensorboard:
-                    writer.add_scalar('val_loss/cls', val_loss_c, iteration)
-                    writer.add_scalar('val_loss/loc', val_loss_l, iteration)
-
+            # save
             if iteration % 5000 == 0 and iteration != 0:
                 print('Saving state, iter:', iteration)
                 torch.save(net.state_dict(), os.path.join(args.save_folder, 'ssd300_0712_{}.pth'.format(iteration))) 
