@@ -35,7 +35,7 @@ def train(args):
     if not os.path.exists(args.save_folder):
         os.mkdir(args.save_folder)
     if args.tensorboard:
-        from tensorboard import SummaryWriter
+        from tensorboardX import SummaryWriter
         writer = SummaryWriter()
 
     # data
