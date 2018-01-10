@@ -18,7 +18,7 @@ from data import v2
 
 class SSD300(nn.Module):
 
-    def __init__(self, num_classes, phase, pretrain=False):
+    def __init__(self, num_classes, phase, pretrain=False, finetune=None):
         super(SSD300, self).__init__()
         self.num_classes = num_classes
         self.phase = phase
@@ -38,6 +38,8 @@ class SSD300(nn.Module):
         self._init_weight()
         if pretrain:
             self._load_weight()
+        if finetune is not None:
+            self._finetune(finetune)
 
     def _base_net(self):
         """Use vgg16 as basenet. 
@@ -256,13 +258,33 @@ class SSD300(nn.Module):
                 if key not in target_dict.keys():
                     target_dict[key] = value
             self.load_state_dict(target_dict)
-            print('Loading weight successfully!')
+            print('Loading imagenet weight successfully!')
+        else:
+            print('Sorry, only .pth and .pkl')
+            
+            
+    def _finetune(self, weight_file):
+        _, ext = os.path.splitext(weight_file)
+        if ext == '.pkl' or '.pth':
+            source_dict = torch.load(weight_file)
+            
+            # remove num_classes-awared layers
+            target_dict = {}
+            for key in source_dict.keys():
+                if 'cls_pred' not in key: # conv1-5
+                    target_dict[key] = source_dict[key]
+            # add
+            for (key, value) in self.state_dict().items():
+                if key not in target_dict.keys():
+                    target_dict[key] = value
+            self.load_state_dict(target_dict)
+            print('Loading finetune weight successfully!')
         else:
             print('Sorry, only .pth and .pkl')
 
 if __name__ == "__main__":
     from torch.autograd import Variable
-    net = SSD300(21, 'train', pretrain=True)
+    net = SSD300(2, 'train', finetune='weights/ssd300_77_03.pth')
 
     x = Variable(torch.randn(1,3,300,300))
     out = net(x)
