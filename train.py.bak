@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 from __future__ import division
 
@@ -9,10 +12,11 @@ import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 import torch.utils.data as data
 
-from heyhey.data import VOCroot, make_dataloader_voc 
-from heyhey.augmentations import SSDAugmentation
-
-from model import SSD300, MultiBoxLoss
+from data import COCOroot, make_dataloader_coco 
+from data import VOCroot, make_dataloader_voc 
+from utils.augmentations import SSDAugmentation
+from layers.modules import MultiBoxLoss
+from ssd import SSD300
 
 import numpy as np
 import os, time, argparse
@@ -23,7 +27,6 @@ def train(args):
     ssd_dim = 300
     means = (104, 117, 123)
     max_iter = 120000
-
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpuID
     if args.cuda and torch.cuda.is_available():
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -36,6 +39,10 @@ def train(args):
         writer = SummaryWriter()
 
     # data
+    #data_loader = make_dataloader_coco(args.coco_root, Augmentation(size),
+    #                                   args.batch_size, args.num_workers, pin_memory=False)
+    #num_classes = 81 # coco
+
     train_sets = [('2007', 'trainval'), ('2012', 'train')]
     val_sets = [('2012', 'val')]
     data_loader_train = make_dataloader_voc(args.voc_root, train_sets, SSDAugmentation(ssd_dim, means),
@@ -137,6 +144,7 @@ if __name__ == '__main__':
     parser.add_argument('--tensorboard', default=False, type=str2bool, help='Use tensorboard for loss visualization')
 
     parser.add_argument('--save_folder', default='weights/', help='Location to save checkpoint models')
+    parser.add_argument('--coco_root', default=COCOroot, help='Location of OCT root directory')
     parser.add_argument('--voc_root', default=VOCroot, help='Location of OCT root directory')
     args = parser.parse_args()
     print(args)

@@ -14,7 +14,20 @@ import os, glob
 
 from torch.autograd import Variable
 from layers import PriorBox, Detect, L2Norm
-from data import v2
+
+v2 = {
+    'feature_maps' : [38, 19, 10, 5, 3, 1],
+    'min_dim' : 300,
+    'steps' : [8, 16, 32, 64, 100, 300],
+    'min_sizes' : [30, 60, 111, 162, 213, 264],
+    'max_sizes' : [60, 111, 162, 213, 264, 315],
+    'aspect_ratios' : [[2], [2, 3], [2, 3], [2, 3], [2], [2]],
+    'variance' : [0.1, 0.2],
+    'clip' : True,
+    'name' : 'v2',
+}
+
+
 
 class SSD300(nn.Module):
 
@@ -40,6 +53,7 @@ class SSD300(nn.Module):
             self._load_weight()
         if finetune is not None:
             self._finetune(finetune)
+
 
     def _base_net(self):
         """Use vgg16 as basenet. 
@@ -74,6 +88,7 @@ class SSD300(nn.Module):
                512, 512, 512, 'M', 512, 512, 512]
         return nn.ModuleList(make_layers(cfg))
 
+
     def _extra_net(self):
         """Extra layers in SSD300, conv8,9,10,11
         Refer https://arxiv.org/pdf/1512.02325.pdf
@@ -107,6 +122,7 @@ class SSD300(nn.Module):
                128, 256]
         return nn.ModuleList(make_layers(cfg))
 
+
     def _predict_net(self):
         """Predict layer, cls and loc
 
@@ -123,6 +139,7 @@ class SSD300(nn.Module):
             loc_layers += [nn.Conv2d(in_channels, mbox*4, kernel_size=3, padding=1)]
             conf_layers += [nn.Conv2d(in_channels, mbox*self.num_classes, kernel_size=3, padding=1)]
         return nn.ModuleList(loc_layers), nn.ModuleList(conf_layers)
+
 
     def forward(self, x):
         """Apply network layers and ops on input image(s) x.
@@ -183,6 +200,7 @@ class SSD300(nn.Module):
                 )
         return output
 
+
     def _init_weight(self):
         def weight_init(m):
             if isinstance(m, nn.Conv2d):
@@ -195,6 +213,7 @@ class SSD300(nn.Module):
                     m.bias.data.zero_()
         self.apply(weight_init)
 
+
     def _fetch_weight(self):
         """Fetch pretrain model using torchvision.
         Returns: 
@@ -205,6 +224,7 @@ class SSD300(nn.Module):
         vgg16 = models.vgg16(pretrained=True)
         model_file = os.path.join(os.environ['HOME'], '.torch/models', 'vgg16-*.pth')
         return glob.glob(model_file)[0]
+
 
     def _load_weight(self, weight_file=None):
         """Load pretrained model.
@@ -261,8 +281,8 @@ class SSD300(nn.Module):
             print('Loading imagenet weight successfully!')
         else:
             print('Sorry, only .pth and .pkl')
-            
-            
+
+
     def _finetune(self, weight_file):
         _, ext = os.path.splitext(weight_file)
         if ext == '.pkl' or '.pth':
@@ -281,6 +301,7 @@ class SSD300(nn.Module):
             print('Loading finetune weight successfully!')
         else:
             print('Sorry, only .pth and .pkl')
+
 
 if __name__ == "__main__":
     from torch.autograd import Variable
